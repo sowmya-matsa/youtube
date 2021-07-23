@@ -24,3 +24,16 @@ class Video(models.Model):
     views = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.id) + ',' + str(self.name)
+
+
+class Comment(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    commenter_name = models.CharField(max_length=255, default="")
+    commenter_image = models.ImageField(blank=True, null=True, default=None)
+    comment = models.CharField(max_length=255, default="")
+    likes = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

@@ -15,11 +15,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from entertainment.views import channel, video, videos
+from entertainment.views import channel, video, videos, comment, comments
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('channel/', channel),
     path('video/', video),
-    path('videos/', videos)
+    path('videos/', videos),
+    path('comment/', comment),
+    path('comments/', comments)
 ]

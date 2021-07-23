@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Channel, Video
+from .models import Channel, Video, Comment
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -192,7 +192,7 @@ def channel(request):
             else:
                 channel_info.delete()
                 content = {
-                    "message":"channel has been deleted"
+                    "message": "channel has been deleted"
                 }
                 return Response(content, status=status.HTTP_400_BAD_REQUEST)
         except Channel.DoesNotExist:
@@ -416,6 +416,208 @@ def video(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
+def comment(request):
+    if request.method == 'GET':
+        # with this method, we can get the required comment
+        comment_id = request.GET.get('comment_id', None)
+        if comment_id is None:
+            content = {
+                'message': 'comment_id is missing'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            comment_info = Comment.objects.get(id=comment_id)
+
+            if comment_info.commenter_image:
+                image_url = comment_info.commenter_image.url
+            else:
+                image_url = None
+            if comment_info.video.channel.profile_pic:
+                profile_pic_url = comment_info.video.channel.profile_pic.url
+            else:
+                profile_pic_url = None
+            content = {
+                'video_id': comment_info.video_id,
+                'video_name': comment_info.video.name,
+                'channel_id': comment_info.video.channel_id,
+                'channel_name': comment_info.video.channel.name,
+                'channel_profile': profile_pic_url,
+                'commenter_name': comment_info.commenter_name,
+                'commenter_image': image_url,
+                'comment': comment_info.comment,
+                'likes': comment_info.likes,
+                'created_at': comment_info.created_at,
+                'updated_at': comment_info.updated_at
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        except Comment.DoesNotExist:
+            content = {
+                'message': 'comment_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            content = {
+                'message': 'comment_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'POST':
+        # with this method,we can add new comment
+        video_id = request.POST.get("video_id", None)
+        commenter_name = request.POST.get('commenter_name', None)
+        commenter_image = request.FILES.get("commenter_image", None)
+        comment = request.POST.get("comment", None)
+        likes = request.POST.get("likes", None)
+
+        if video_id is None or commenter_name is None or commenter_image is None or comment is None:
+            content = {
+                'message': 'video_id or commenter_name or commenter_image or comment is mandatory '
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            new_comment = Comment.objects.create(
+                video_id=video_id,
+                commenter_name=commenter_name,
+                commenter_image=commenter_image,
+                comment=comment,
+                likes=likes
+            )
+            new_comment.save()
+            if new_comment.commenter_image:
+                image_url = new_comment.commenter_image.url
+            else:
+                image_url = None
+            if new_comment.video.channel.profile_pic:
+                profile_pic_url = new_comment.video.channel.profile_pic.url
+            else:
+                profile_pic_url = None
+            content = {
+                'message': "new comment has been added",
+                'data': {
+                    'video_id': new_comment.video_id,
+                    'video_name': new_comment.video.name,
+                    'channel_id': new_comment.video.channel_id,
+                    'channel_name': new_comment.video.channel.name,
+                    'channel_profile': profile_pic_url,
+                    'commenter_name': new_comment.commenter_name,
+                    'commenter_image': image_url,
+                    'comment': new_comment.comment,
+                    'likes': new_comment.likes,
+                    'created_at': new_comment.created_at,
+                    'updated_at': new_comment.updated_at
+                }
+            }
+            return Response(content, status=status.HTTP_201_CREATED)
+        except Video.DoesNotExist:
+            content = {
+                'message': 'video_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            content = {
+                'message': str(e)
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'PATCH':
+        # with this method, we can update the existing videos
+        comment_id = request.POST.get("comment_id", None)
+        new_video_id = request.POST.get("video_id", None)
+        new_commenter_name = request.POST.get('commenter_name', None)
+        new_commenter_image = request.FILES.get("commenter_image", None)
+        new_comment = request.POST.get("comment", None)
+        new_likes = request.POST.get("likes", None)
+
+        if comment_id is None:
+            content = {
+                'message': ' comment_id is mandatory '
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if new_commenter_name is not None and new_commenter_name.lstrip() == "":
+                content = {
+                    'message': 'name cannot be empty'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            comment_info = Comment.objects.get(id=comment_id)
+            comment_info.video_id = new_video_id if new_video_id is not None else comment_info.video_id
+            comment_info.commenter_name = new_commenter_name if new_commenter_name is not None\
+                else comment_info.commenter_name
+            comment_info.commenter_image = new_commenter_image if new_commenter_image is not None \
+                else comment_info.commenter_image
+            comment_info.comment = new_comment if new_comment is not None else comment_info.comment
+            comment_info.likes = new_likes if new_likes is not None else comment_info.likes
+
+            comment_info.save()
+            if comment_info.commenter_image:
+                image_url = comment_info.commenter_image.url
+            else:
+                image_url = None
+            if comment_info.video.channel.profile_pic:
+                profile_pic_url = new_comment.video.channel.profile_pic.url
+            else:
+                profile_pic_url = None
+
+            content = {
+                'message': " comment has been updated",
+                'data': {
+                    'video_id': comment_info.video_id,
+                    'video_name': comment_info.video.name,
+                    'channel_id': comment_info.video.channel_id,
+                    'channel_name': comment_info.video.channel.name,
+                    'channel_profile': profile_pic_url,
+                    'commenter_name': comment_info.commenter_name,
+                    'commenter_image': image_url,
+                    'comment': comment_info.comment,
+                    'likes': comment_info.likes,
+                    'created_at': comment_info.created_at,
+                    'updated_at': comment_info.updated_at}
+
+            }
+            return Response(content, status=status.HTTP_200_OK)
+
+        except Comment.DoesNotExist:
+            content = {
+                'message': 'comment_id  is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            content = {
+                'message': str(e)
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except IntegrityError:
+            content = {
+                'message': 'video_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'DELETE':
+        # with this method, we can delete the existing comment
+        comment_id = request.POST.get('comment_id', None)
+        if comment_id is None:
+            content = {
+                'message': 'comment_id is mandatory'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            comment_info = Comment.objects.get(id=comment_id)
+            comment_info.delete()
+            content = {
+                'message': 'comment has been deleted'
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        except Comment.DoesNotExist:
+            content = {
+                'message': 'comment_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            content = {
+                'message': 'comment_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['GET'])
 def videos(request):
     channel_id = request.GET.get('channel_id', None)
@@ -458,3 +660,47 @@ def videos(request):
         final_videos.append(content)
 
     return Response(final_videos, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def comments(request):
+    video_id = request.GET.get('video_id', None)
+    # with this method, we can get all the comments or else we can get the comments belong to the single video
+    if video_id is None:
+        all_comments = Comment.objects.all()
+
+    elif video_id is not None:
+        try:
+            all_comments = Comment.objects.filter(video_id=video_id)
+        except ValueError:
+            content = {
+                'message': 'video_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    final_comments = []
+    for temp_comment in all_comments:
+        if temp_comment.commenter_image:
+            image_url = temp_comment.commenter_image.url
+        else:
+            image_url = None
+        if temp_comment.video.channel.profile_pic:
+            profile_pic_url = temp_comment.video.channel.profile_pic.url
+        else:
+            profile_pic_url = None
+        content = {
+            'video_id': temp_comment.video_id,
+            'video_name': temp_comment.video.name,
+            'channel_id': temp_comment.video.channel_id,
+            'channel_name': temp_comment.video.channel.name,
+            'channel_profile': profile_pic_url,
+            'commenter_name': temp_comment.commenter_name,
+            'commenter_image': image_url,
+            'comment': temp_comment.comment,
+            'likes': temp_comment.likes,
+            'created_at': temp_comment.created_at,
+            'updated_at': temp_comment.updated_at
+
+        }
+        final_comments.append(content)
+
+    return Response(final_comments, status=status.HTTP_200_OK)
