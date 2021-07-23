@@ -180,19 +180,21 @@ def channel(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
             channel_info = Channel.objects.get(id=channel_id)
-            all_videos = Video.objects.filter(channel_id=channel_id)
-            content = []
-            for video in all_videos:
-                count = video.objects.all().count()
-                print(count)
-                if count < 2:
-                    video.delete()
-                    channel_info.delete()
-                    context = {
-                        "message": "channel has been deleted"
-                    }
-                    content.append(context)
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            all_videos = Video.objects.filter(channel_id=channel_info.id)
+            count = all_videos.count()
+            if count > 0:
+                content = {
+                    "videos_count": count,
+                    "message": "channel cannot be deleted, as it contain videos"
+                }
+
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                channel_info.delete()
+                content = {
+                    "message":"channel has been deleted"
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
         except Channel.DoesNotExist:
             content = {
                 'message': 'channel_id is invalid'
