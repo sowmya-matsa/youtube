@@ -15,7 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from entertainment.views import channel, video, videos, comment, comments
+from entertainment.views import channel, video, videos, comment, comments , sign_up, login
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView, TokenVerifyView
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,5 +27,10 @@ urlpatterns = [
     path('video/', video),
     path('videos/', videos),
     path('comment/', comment),
-    path('comments/', comments)
+    path('comments/', comments),
+    path('sign_up/',sign_up),
+    path('login/',login),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 ]

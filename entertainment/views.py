@@ -1,12 +1,96 @@
 from django.shortcuts import render
-from .models import Channel, Video, Comment
+from .models import CustomUser, Channel, Video, Comment
 from rest_framework import status
 from rest_framework.decorators import api_view
+from django.contrib.auth import authenticate
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import IntegrityError
 
 
 # Create your views here.
+@api_view(['POST'])
+def sign_up(request):
+    if request.method == 'POST':
+        username = request.POST.get("username", None)
+        password = request.POST.get("password", None)
+        confirm_password = request.POST.get("confirm_password", None)
+        email = request.POST.get("email", None)
+        if username is None or password is None or confirm_password is None or email is None:
+            content = {
+                'message': 'username or password or category_id or confirm_password  is mandatory '
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+        if "-" in username or "@" in username or "#" in username or "*" in username or "&" in username:
+            print("hii")
+            content = {
+                "message": "special symbols cannot be used for usernames"
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        if username.isalpha() is not True or username.lstrip() == "":
+            content = {
+                "message": "name cannot be empty or spacing is not allowed or name cannot be number"
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                print("hii")
+                new_user = CustomUser.objects.create_user(username=username, password=password, email=email)
+                new_user.save()
+                content = {
+                    'message': "new user is added",
+                    'username': new_user.username,
+                    "user_id": new_user.id,
+                    "email": new_user.email
+
+                }
+                return Response(content, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                content = {
+                    'message': 'user already exists'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+def login(request):
+    email = request.POST.get("email", None)
+    password = request.POST.get("password", None)
+    username = CustomUser.objects.get(email=email.lower()).username
+    user = authenticate(username=username, password=password)
+    if email is None or password is None:
+        content = {
+            "message": "user_name or password is mandatory"
+        }
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    if username.lstrip() == "":
+        content = {
+            "message": "username cannot be empty"
+        }
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        if user is not None:
+            profile = CustomUser.objects.get(id=user.id)
+            content = {
+                "message": "you have been successfully logged in",
+                "username": profile.username,
+            }
+            return Response(content, status=status.HTTP_200_OK)
+    except CustomUser.DoesNotExist:
+        content = {
+            "message": "account is not found "
+        }
+        return Response(content, status.HTTP_400_BAD_REQUEST)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def channel(request):
     # with this method, we can get the single channel
@@ -207,6 +291,8 @@ def channel(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def video(request):
     if request.method == 'GET':
@@ -416,6 +502,8 @@ def video(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def comment(request):
     if request.method == 'GET':
@@ -541,7 +629,7 @@ def comment(request):
                 return Response(content, status=status.HTTP_400_BAD_REQUEST)
             comment_info = Comment.objects.get(id=comment_id)
             comment_info.video_id = new_video_id if new_video_id is not None else comment_info.video_id
-            comment_info.commenter_name = new_commenter_name if new_commenter_name is not None\
+            comment_info.commenter_name = new_commenter_name if new_commenter_name is not None \
                 else comment_info.commenter_name
             comment_info.commenter_image = new_commenter_image if new_commenter_image is not None \
                 else comment_info.commenter_image
@@ -554,7 +642,7 @@ def comment(request):
             else:
                 image_url = None
             if comment_info.video.channel.profile_pic:
-                profile_pic_url = new_comment.video.channel.profile_pic.url
+                profile_pic_url = comment_info.video.channel.profile_pic.url
             else:
                 profile_pic_url = None
 
@@ -618,6 +706,8 @@ def comment(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def videos(request):
     channel_id = request.GET.get('channel_id', None)
@@ -662,6 +752,8 @@ def videos(request):
     return Response(final_videos, status=status.HTTP_200_OK)
 
 
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def comments(request):
     video_id = request.GET.get('video_id', None)

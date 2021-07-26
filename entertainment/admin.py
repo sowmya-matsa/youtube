@@ -1,8 +1,13 @@
 from django.contrib import admin
-from .models import Channel, Video, Comment
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser,Channel, Video, Comment
 
 
 # Register your models here.
+class CustomUserAdmin(UserAdmin):
+    list_display = ["id", "email"]
+
+
 class ChannelAdmin(admin.ModelAdmin):
     list_display = ["id", "name", "banner", "profile_pic", "description", 'subscribers', "created_at", "updated_at"]
 
@@ -12,9 +17,10 @@ class VideoAdmin(admin.ModelAdmin):
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ["id", "video", "commenter_name","commenter_image", "comment", "likes", "created_at", "updated_at"]
+    list_display = ["id", "video", "commenter_name", "commenter_image", "comment", "likes", "created_at", "updated_at"]
 
 
 admin.site.register(Channel, ChannelAdmin)
 admin.site.register(Video, VideoAdmin)
 admin.site.register(Comment, CommentAdmin)
+admin.site.register(CustomUser,CustomUserAdmin)
