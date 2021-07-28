@@ -17,15 +17,13 @@ def sign_up(request):
         username = request.POST.get("username", None)
         password = request.POST.get("password", None)
         confirm_password = request.POST.get("confirm_password", None)
-        email = request.POST.get("email", None)
-        if username is None or password is None or confirm_password is None or email is None:
+        if username is None or password is None or confirm_password is None:
             content = {
                 'message': 'username or password or category_id or confirm_password  is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
         if "-" in username or "@" in username or "#" in username or "*" in username or "&" in username:
-            print("hii")
             content = {
                 "message": "special symbols cannot be used for usernames"
             }
@@ -37,14 +35,13 @@ def sign_up(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
-                print("hii")
-                new_user = CustomUser.objects.create_user(username=username, password=password, email=email)
+
+                new_user = CustomUser.objects.create_user(username=username, password=password)
                 new_user.save()
                 content = {
                     'message': "new user is added",
                     'username': new_user.username,
-                    "user_id": new_user.id,
-                    "email": new_user.email
+                    "user_id": new_user.id
 
                 }
                 return Response(content, status=status.HTTP_201_CREATED)
@@ -55,40 +52,6 @@ def sign_up(request):
                 return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-@authentication_classes([JWTTokenUserAuthentication])
-@permission_classes([IsAuthenticated])
-def login(request):
-    email = request.POST.get("email", None)
-    password = request.POST.get("password", None)
-    username = CustomUser.objects.get(email=email.lower()).username
-    user = authenticate(username=username, password=password)
-    if email is None or password is None:
-        content = {
-            "message": "user_name or password is mandatory"
-        }
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    if username.lstrip() == "":
-        content = {
-            "message": "username cannot be empty"
-        }
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        if user is not None:
-            profile = CustomUser.objects.get(id=user.id)
-            content = {
-                "message": "you have been successfully logged in",
-                "username": profile.username,
-            }
-            return Response(content, status=status.HTTP_200_OK)
-    except CustomUser.DoesNotExist:
-        content = {
-            "message": "account is not found "
-        }
-        return Response(content, status.HTTP_400_BAD_REQUEST)
-
-
 @authentication_classes([JWTTokenUserAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
@@ -96,32 +59,39 @@ def channel(request):
     # with this method, we can get the single channel
     if request.method == 'GET':
         channel_id = request.GET.get('channel_id', None)
-        if channel_id is None:
+        user_id = request.GET.get("user_id", None)
+        if channel_id is None or user_id is None:
             content = {
-                'message': 'channel_id is missing'
+                'message': 'channel_id or user_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            channel_info = Channel.objects.get(id=channel_id)
-            if channel_info.banner:
-                banner_url = channel_info.banner.url
-            else:
-                banner_url = None
-            if channel_info.profile_pic:
-                image_url = channel_info.profile_pic.url
-            else:
-                image_url = None
-            content = {
-                'name': channel_info.name,
-                'banner': banner_url,
-                'profile_pic': image_url,
-                'description': channel_info.description,
-                'subscribers': channel_info.subscribers,
-                'created_at': channel_info.created_at,
-                'updated_at': channel_info.updated_at,
+            user = CustomUser.objects.get(id=user_id)
+            auth_check = authenticate(username=user.username, password=user.password)
+            context = []
+            if auth_check:
+                print("hii")
+                channel_info = Channel.objects.get(id=channel_id)
+                if channel_info.banner:
+                    banner_url = channel_info.banner.url
+                else:
+                    banner_url = None
+                if channel_info.profile_pic:
+                    image_url = channel_info.profile_pic.url
+                else:
+                    image_url = None
+                content = {
+                    'name': channel_info.name,
+                    'banner': banner_url,
+                    'profile_pic': image_url,
+                    'description': channel_info.description,
+                    'subscribers': channel_info.subscribers,
+                    'created_at': channel_info.created_at,
+                    'updated_at': channel_info.updated_at,
 
-            }
-            return Response(content, status=status.HTTP_200_OK)
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
         except Channel.DoesNotExist:
             content = {
                 'message': 'channel_id is invalid'
