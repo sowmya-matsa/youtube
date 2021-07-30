@@ -761,7 +761,7 @@ def comments(request):
     user_id = request.user.id
     # with this method, we can get all the comments or else we can get the comments belong to the single video
     if video_id is None:
-        all_comments = Comment.objects.all(user_id=user_id)
+        all_comments = Comment.objects.filter(user_id=user_id)
 
     elif video_id is not None:
         try:
