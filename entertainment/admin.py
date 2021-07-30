@@ -9,15 +9,15 @@ class CustomUserAdmin(UserAdmin):
 
 
 class ChannelAdmin(admin.ModelAdmin):
-    list_display = ["id","user", "name", "banner", "profile_pic", "description", 'subscribers', "created_at", "updated_at"]
+    list_display = ["id","user_id", "name", "banner", "profile_pic", "description", 'subscribers', "created_at", "updated_at"]
 
 
 class VideoAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "channel", "name", "description", "thumbnail", "likes", "views", "created_at", "updated_at"]
+    list_display = ["id", "user_id", "channel", "name", "description", "thumbnail", "likes", "views", "created_at", "updated_at"]
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "video", "commenter_name", "commenter_image", "comment", "likes", "created_at", "updated_at"]
+    list_display = ["id", "user_id", "video", "commenter_name", "commenter_image", "comment", "likes", "created_at", "updated_at"]
 
 
 admin.site.register(Channel, ChannelAdmin)

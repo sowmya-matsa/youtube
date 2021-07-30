@@ -59,14 +59,14 @@ def channel(request):
     # with this method, we can get the single channel
     if request.method == 'GET':
         channel_id = request.GET.get('channel_id', None)
-        user = request.user
+        user_id = request.user.id
         if channel_id is None:
             content = {
                 'message': 'channel_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            channel_info = Channel.objects.get(id=channel_id, user_id=request.user.id)
+            channel_info = Channel.objects.get(id=channel_id, user_id=user_id)
             if channel_info.banner:
                 banner_url = channel_info.banner.url
             else:
@@ -76,7 +76,7 @@ def channel(request):
             else:
                 image_url = None
             content = {
-                'user': user.id,
+                'user': user_id,
                 'name': channel_info.name,
                 'banner': banner_url,
                 'profile_pic': image_url,
@@ -106,7 +106,7 @@ def channel(request):
         profile_pic = request.FILES.get('profile_pic', None)
         description = request.POST.get("description", None)
         subscribers = request.POST.get("subscribers", None)
-        user = request.user
+        user_id = request.user
         if name is None or banner is None or profile_pic is None or description is None:
             content = {
                 'message': 'channel_name or banner or profile_pic or description  is mandatory '
@@ -124,7 +124,7 @@ def channel(request):
                 profile_pic=profile_pic,
                 description=description,
                 subscribers=subscribers,
-                user=user
+                user_id=user_id
 
             )
             new_channel.save()
@@ -139,7 +139,7 @@ def channel(request):
             content = {
                 'message': "new channel has been added",
                 'data': {
-                    'user_id': user.id,
+                    'user_id': user_id.id,
                     'channel_id': new_channel.id,
                     'name': new_channel.name,
                     'banner': banner_url,
@@ -172,7 +172,7 @@ def channel(request):
         new_subscribers = request.POST.get("subscribers", None)
         created_at = request.POST.get("created_at", None)
         updated_at = request.POST.get("updated_at", None)
-        new_user = request.user
+        user_id = request.user.id
 
         if channel_id is None:
             content = {
@@ -186,8 +186,7 @@ def channel(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            channel_info = Channel.objects.get(id=channel_id, user=request.user)
-            channel_info.user = new_user if new_user is not None else channel_info.user
+            channel_info = Channel.objects.get(id=channel_id, user_id=user_id)
             channel_info.name = new_name if new_name is not None else channel_info.name
             channel_info.banner = new_banner if new_banner is not None else channel_info.banner
             channel_info.profile_pic = new_profile_pic if new_profile_pic is not None else channel_info.profile_pic
@@ -205,7 +204,7 @@ def channel(request):
             content = {
                 'message': " channel has been updated",
                 'data': {
-                    'user_id': new_user.id,
+                    'user_id': user_id,
                     'channel_id': channel_info.id,
                     'name': channel_info.name,
                     'banner_url': banner_url,
@@ -237,7 +236,7 @@ def channel(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            channel_info = Channel.objects.get(id=channel_id, user=request.user)
+            channel_info = Channel.objects.get(id=channel_id, user_id=request.user)
             all_videos = Video.objects.filter(channel_id=channel_info.id)
             count = all_videos.count()
             if count > 0:
@@ -272,14 +271,14 @@ def video(request):
     if request.method == 'GET':
         # with this method, we can get single video
         video_id = request.GET.get('video_id', None)
-        user = request.user
+        user_id = request.user.id
         if video_id is None:
             content = {
                 'message': 'video_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            video_info = Video.objects.get(id=video_id, user_id=request.user.id)
+            video_info = Video.objects.get(id=video_id, user_id=user_id)
             if video_info.thumbnail:
                 image_url = video_info.thumbnail.url
             else:
@@ -289,7 +288,7 @@ def video(request):
             else:
                 profile_pic_url = None
             content = {
-                'user': user.id,
+                'user': user_id,
                 'name': video_info.name,
                 'description': video_info.description,
                 'thumbnail': image_url,
@@ -321,18 +320,19 @@ def video(request):
         thumbnail = request.FILES.get('thumbnail', None)
         likes = request.POST.get("likes", None)
         views = request.POST.get("views", None)
-        user = request.user
+        user_id = request.user.id
         if name is None or description is None or channel_id is None or thumbnail is None:
             content = {
                 'message': 'video_name or description or channel_id or thumbnail is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        if name.lstrip() == "":
+            content = {
+                'message': 'name cannot be empty'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            if name.lstrip() == "":
-                content = {
-                    'message': 'name cannot be empty'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            channel_info = Channel.objects.get(id=channel_id, user_id=user_id)
             new_video = Video.objects.create(
                 channel_id=channel_id,
                 name=name,
@@ -340,8 +340,8 @@ def video(request):
                 thumbnail=thumbnail,
                 likes=likes,
                 views=views,
+                user_id=channel_info.user_id
             )
-
             new_video.save()
             if new_video.thumbnail:
                 image_url = new_video.thumbnail.url
@@ -354,7 +354,7 @@ def video(request):
             content = {
                 'message': "new video has been added",
                 'data': {
-                    'user_id': user.id,
+                    'user_id': user_id,
                     'video_id': new_video.id,
                     'name': new_video.name,
                     'description': new_video.description,
@@ -385,30 +385,35 @@ def video(request):
                 'message': 'channel_id should be an integer'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except Channel.DoesNotExist:
+            content = {
+                'message': 'channel_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == 'PATCH':
         # with this method, we can update the existing videos
         video_id = request.POST.get("video_id", None)
         new_name = request.POST.get('name', None)
         new_description = request.POST.get('description', None)
-        new_channel_id = request.POST.get('channel_id', None)
+        channel_id = request.POST.get('channel_id', None)
         new_thumbnail = request.FILES.get('thumbnail', None)
         new_likes = request.POST.get("likes", None)
         new_views = request.POST.get("views", None)
+        user_id = request.user.id
         if video_id is None:
             content = {
                 'message': ' video_id is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        if new_name is not None and new_name.lstrip() == "":
+            content = {
+                'message': 'name cannot be empty'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            if new_name is not None and new_name.lstrip() == "":
-                content = {
-                    'message': 'name cannot be empty'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            video_info = Video.objects.get(id=video_id)
+            video_info = Video.objects.get(id=video_id, user_id=user_id)
             video_info.name = new_name if new_name is not None else video_info.name
             video_info.description = new_description if new_description is not None else video_info.description
-            video_info.channel_id = new_channel_id if new_channel_id is not None else video_info.channel_id
             video_info.thumbnail = new_thumbnail if new_thumbnail is not None else video_info.thumbnail
             video_info.likes = new_likes if new_likes is not None else video_info.likes
             video_info.views = new_views if new_views is not None else video_info.views
@@ -424,6 +429,7 @@ def video(request):
             content = {
                 'message': " video has been updated",
                 'data': {
+                    'user_id': user_id,
                     'video_id': video_info.id,
                     'name': video_info.name,
                     'description': video_info.description,
@@ -432,7 +438,7 @@ def video(request):
                     'views': video_info.views,
                     'created_at': video_info.created_at,
                     'updated_at': video_info.updated_at,
-                    'channel_id': video_info.channel_id,
+                    'channel_id': video_info.channel.id,
                     'channel_name': video_info.channel.name,
                     'channel_profile': profile_pic_url}
 
@@ -457,13 +463,14 @@ def video(request):
     elif request.method == 'DELETE':
         # with this method, we can delete the video
         video_id = request.POST.get('video_id', None)
+        user_id = request.user.id
         if video_id is None:
             content = {
                 'message': 'video_id is mandatory'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            video_info = Video.objects.get(id=video_id, user=request.user)
+            video_info = Video.objects.get(id=video_id, user_id=user_id)
             video_info.delete()
             content = {
                 'message': 'video has been deleted'
@@ -488,14 +495,14 @@ def comment(request):
     if request.method == 'GET':
         # with this method, we can get the required comment
         comment_id = request.GET.get('comment_id', None)
-        user = request.user
+        user_id = request.user.id
         if comment_id is None:
             content = {
                 'message': 'comment_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            comment_info = Comment.objects.get(id=comment_id, user=request.user)
+            comment_info = Comment.objects.get(id=comment_id, user_id=user_id)
 
             if comment_info.commenter_image:
                 image_url = comment_info.commenter_image.url
@@ -506,7 +513,7 @@ def comment(request):
             else:
                 profile_pic_url = None
             content = {
-                'user_id': user.id,
+                'user_id': user_id,
                 'video_id': comment_info.video_id,
                 'video_name': comment_info.video.name,
                 'channel_id': comment_info.video.channel_id,
@@ -538,19 +545,22 @@ def comment(request):
         commenter_image = request.FILES.get("commenter_image", None)
         comment = request.POST.get("comment", None)
         likes = request.POST.get("likes", None)
-
+        user_id = request.user.id
         if video_id is None or commenter_name is None or commenter_image is None or comment is None:
             content = {
                 'message': 'video_id or commenter_name or commenter_image or comment is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
+            video_info = Video.objects.get(id=video_id, user_id=user_id)
             new_comment = Comment.objects.create(
                 video_id=video_id,
                 commenter_name=commenter_name,
                 commenter_image=commenter_image,
                 comment=comment,
-                likes=likes
+                likes=likes,
+                user_id=video_info.user_id
+
             )
             new_comment.save()
             if new_comment.commenter_image:
@@ -564,6 +574,7 @@ def comment(request):
             content = {
                 'message': "new comment has been added",
                 'data': {
+                    'user_id': user_id,
                     'video_id': new_comment.video_id,
                     'video_name': new_comment.video.name,
                     'channel_id': new_comment.video.channel_id,
@@ -591,12 +602,12 @@ def comment(request):
     elif request.method == 'PATCH':
         # with this method, we can update the existing videos
         comment_id = request.POST.get("comment_id", None)
-        new_video_id = request.POST.get("video_id", None)
+        video_id = request.POST.get("video_id", None)
         new_commenter_name = request.POST.get('commenter_name', None)
         new_commenter_image = request.FILES.get("commenter_image", None)
         new_comment = request.POST.get("comment", None)
         new_likes = request.POST.get("likes", None)
-
+        user_id = request.user.id
         if comment_id is None:
             content = {
                 'message': ' comment_id is mandatory '
@@ -608,8 +619,7 @@ def comment(request):
                     'message': 'name cannot be empty'
                 }
                 return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            comment_info = Comment.objects.get(id=comment_id)
-            comment_info.video_id = new_video_id if new_video_id is not None else comment_info.video_id
+            comment_info = Comment.objects.get(id=comment_id, user_id=user_id)
             comment_info.commenter_name = new_commenter_name if new_commenter_name is not None \
                 else comment_info.commenter_name
             comment_info.commenter_image = new_commenter_image if new_commenter_image is not None \
@@ -630,6 +640,7 @@ def comment(request):
             content = {
                 'message': " comment has been updated",
                 'data': {
+                    'user_id': user_id,
                     'video_id': comment_info.video_id,
                     'video_name': comment_info.video.name,
                     'channel_id': comment_info.video.channel_id,
@@ -663,13 +674,14 @@ def comment(request):
     elif request.method == 'DELETE':
         # with this method, we can delete the existing comment
         comment_id = request.POST.get('comment_id', None)
+        user_id = request.user.id
         if comment_id is None:
             content = {
                 'message': 'comment_id is mandatory'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            comment_info = Comment.objects.get(id=comment_id, user=request.user)
+            comment_info = Comment.objects.get(id=comment_id, user_id=user_id)
             comment_info.delete()
             content = {
                 'message': 'comment has been deleted'
@@ -692,17 +704,23 @@ def comment(request):
 @api_view(['GET'])
 def videos(request):
     channel_id = request.GET.get('channel_id', None)
+    user_id = request.user.id
     # with this method, we can get all the videos or else we can get the videos belong to the single channel
     if channel_id is None:
-        all_videos = Video.objects.all()
+        all_videos = Video.objects.filter(user_id=user_id)
 
     elif channel_id is not None:
         try:
-            all_videos = Video.objects.filter(channel_id=channel_id)
+            all_videos = Video.objects.filter(channel_id=channel_id, user_id=user_id)
 
         except ValueError:
             content = {
                 'message': 'channel_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except Video.DoesNotExist:
+            content = {
+                'message': 'videos not found'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_videos = []
@@ -716,6 +734,7 @@ def videos(request):
         else:
             profile_pic_url = None
         content = {
+            'user_id': user_id,
             'video_id': temp_video.id,
             'name': temp_video.name,
             'description': temp_video.description,
@@ -739,13 +758,14 @@ def videos(request):
 @api_view(['GET'])
 def comments(request):
     video_id = request.GET.get('video_id', None)
+    user_id = request.user.id
     # with this method, we can get all the comments or else we can get the comments belong to the single video
     if video_id is None:
-        all_comments = Comment.objects.all()
+        all_comments = Comment.objects.all(user_id=user_id)
 
     elif video_id is not None:
         try:
-            all_comments = Comment.objects.filter(video_id=video_id)
+            all_comments = Comment.objects.filter(video_id=video_id, user_id=user_id)
         except ValueError:
             content = {
                 'message': 'video_id should be a integer'
@@ -762,6 +782,7 @@ def comments(request):
         else:
             profile_pic_url = None
         content = {
+            'user_id': user_id,
             'video_id': temp_comment.video_id,
             'video_name': temp_comment.video.name,
             'channel_id': temp_comment.video.channel_id,
