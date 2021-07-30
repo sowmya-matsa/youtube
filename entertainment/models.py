@@ -7,10 +7,11 @@ class CustomUser(AbstractUser):
     email = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
-        return str(self.email)
+        return str(self.id)
 
 
 class Channel(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
     banner = models.ImageField(max_length=255)
     profile_pic = models.ImageField(blank=True, null=True, default=None)
@@ -24,6 +25,7 @@ class Channel(models.Model):
 
 
 class Video(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     channel = models.ForeignKey(Channel, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -38,6 +40,7 @@ class Video(models.Model):
 
 
 class Comment(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     video = models.ForeignKey(Video, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     commenter_name = models.CharField(max_length=255, default="")
     commenter_image = models.ImageField(blank=True, null=True, default=None)

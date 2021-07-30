@@ -59,38 +59,34 @@ def channel(request):
     # with this method, we can get the single channel
     if request.method == 'GET':
         channel_id = request.GET.get('channel_id', None)
-        user_id = request.GET.get("user_id", None)
-        if channel_id is None or user_id is None:
+        user = request.user
+        if channel_id is None:
             content = {
-                'message': 'channel_id or user_id is missing'
+                'message': 'channel_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            user = CustomUser.objects.get(id=user_id)
-            auth_check = authenticate(username=user.username, password=user.password)
-            context = []
-            if auth_check:
-                print("hii")
-                channel_info = Channel.objects.get(id=channel_id)
-                if channel_info.banner:
-                    banner_url = channel_info.banner.url
-                else:
-                    banner_url = None
-                if channel_info.profile_pic:
-                    image_url = channel_info.profile_pic.url
-                else:
-                    image_url = None
-                content = {
-                    'name': channel_info.name,
-                    'banner': banner_url,
-                    'profile_pic': image_url,
-                    'description': channel_info.description,
-                    'subscribers': channel_info.subscribers,
-                    'created_at': channel_info.created_at,
-                    'updated_at': channel_info.updated_at,
+            channel_info = Channel.objects.get(id=channel_id, user_id=request.user.id)
+            if channel_info.banner:
+                banner_url = channel_info.banner.url
+            else:
+                banner_url = None
+            if channel_info.profile_pic:
+                image_url = channel_info.profile_pic.url
+            else:
+                image_url = None
+            content = {
+                'user': user.id,
+                'name': channel_info.name,
+                'banner': banner_url,
+                'profile_pic': image_url,
+                'description': channel_info.description,
+                'subscribers': channel_info.subscribers,
+                'created_at': channel_info.created_at,
+                'updated_at': channel_info.updated_at,
 
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            }
+            return Response(content, status=status.HTTP_200_OK)
 
         except Channel.DoesNotExist:
             content = {
@@ -110,6 +106,7 @@ def channel(request):
         profile_pic = request.FILES.get('profile_pic', None)
         description = request.POST.get("description", None)
         subscribers = request.POST.get("subscribers", None)
+        user = request.user
         if name is None or banner is None or profile_pic is None or description is None:
             content = {
                 'message': 'channel_name or banner or profile_pic or description  is mandatory '
@@ -126,7 +123,8 @@ def channel(request):
                 banner=banner,
                 profile_pic=profile_pic,
                 description=description,
-                subscribers=subscribers
+                subscribers=subscribers,
+                user=user
 
             )
             new_channel.save()
@@ -141,6 +139,7 @@ def channel(request):
             content = {
                 'message': "new channel has been added",
                 'data': {
+                    'user_id': user.id,
                     'channel_id': new_channel.id,
                     'name': new_channel.name,
                     'banner': banner_url,
@@ -173,18 +172,22 @@ def channel(request):
         new_subscribers = request.POST.get("subscribers", None)
         created_at = request.POST.get("created_at", None)
         updated_at = request.POST.get("updated_at", None)
+        new_user = request.user
+
         if channel_id is None:
             content = {
                 'message': ' channel_id is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_name is not None and new_name.lstrip() == "":
+            content = {
+                'message': 'name cannot be empty'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            if new_name is not None and new_name.lstrip() == "":
-                content = {
-                    'message': 'name cannot be empty'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            channel_info = Channel.objects.get(id=channel_id)
+            channel_info = Channel.objects.get(id=channel_id, user=request.user)
+            channel_info.user = new_user if new_user is not None else channel_info.user
             channel_info.name = new_name if new_name is not None else channel_info.name
             channel_info.banner = new_banner if new_banner is not None else channel_info.banner
             channel_info.profile_pic = new_profile_pic if new_profile_pic is not None else channel_info.profile_pic
@@ -202,6 +205,7 @@ def channel(request):
             content = {
                 'message': " channel has been updated",
                 'data': {
+                    'user_id': new_user.id,
                     'channel_id': channel_info.id,
                     'name': channel_info.name,
                     'banner_url': banner_url,
@@ -233,7 +237,7 @@ def channel(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            channel_info = Channel.objects.get(id=channel_id)
+            channel_info = Channel.objects.get(id=channel_id, user=request.user)
             all_videos = Video.objects.filter(channel_id=channel_info.id)
             count = all_videos.count()
             if count > 0:
@@ -268,13 +272,14 @@ def video(request):
     if request.method == 'GET':
         # with this method, we can get single video
         video_id = request.GET.get('video_id', None)
+        user = request.user
         if video_id is None:
             content = {
                 'message': 'video_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            video_info = Video.objects.get(id=video_id)
+            video_info = Video.objects.get(id=video_id, user_id=request.user.id)
             if video_info.thumbnail:
                 image_url = video_info.thumbnail.url
             else:
@@ -284,6 +289,7 @@ def video(request):
             else:
                 profile_pic_url = None
             content = {
+                'user': user.id,
                 'name': video_info.name,
                 'description': video_info.description,
                 'thumbnail': image_url,
@@ -315,6 +321,7 @@ def video(request):
         thumbnail = request.FILES.get('thumbnail', None)
         likes = request.POST.get("likes", None)
         views = request.POST.get("views", None)
+        user = request.user
         if name is None or description is None or channel_id is None or thumbnail is None:
             content = {
                 'message': 'video_name or description or channel_id or thumbnail is mandatory '
@@ -332,8 +339,9 @@ def video(request):
                 description=description,
                 thumbnail=thumbnail,
                 likes=likes,
-                views=views
+                views=views,
             )
+
             new_video.save()
             if new_video.thumbnail:
                 image_url = new_video.thumbnail.url
@@ -346,6 +354,7 @@ def video(request):
             content = {
                 'message': "new video has been added",
                 'data': {
+                    'user_id': user.id,
                     'video_id': new_video.id,
                     'name': new_video.name,
                     'description': new_video.description,
@@ -454,7 +463,7 @@ def video(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            video_info = Video.objects.get(id=video_id)
+            video_info = Video.objects.get(id=video_id, user=request.user)
             video_info.delete()
             content = {
                 'message': 'video has been deleted'
@@ -479,13 +488,14 @@ def comment(request):
     if request.method == 'GET':
         # with this method, we can get the required comment
         comment_id = request.GET.get('comment_id', None)
+        user = request.user
         if comment_id is None:
             content = {
                 'message': 'comment_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            comment_info = Comment.objects.get(id=comment_id)
+            comment_info = Comment.objects.get(id=comment_id, user=request.user)
 
             if comment_info.commenter_image:
                 image_url = comment_info.commenter_image.url
@@ -496,6 +506,7 @@ def comment(request):
             else:
                 profile_pic_url = None
             content = {
+                'user_id': user.id,
                 'video_id': comment_info.video_id,
                 'video_name': comment_info.video.name,
                 'channel_id': comment_info.video.channel_id,
@@ -658,7 +669,7 @@ def comment(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            comment_info = Comment.objects.get(id=comment_id)
+            comment_info = Comment.objects.get(id=comment_id, user=request.user)
             comment_info.delete()
             content = {
                 'message': 'comment has been deleted'
@@ -688,6 +699,7 @@ def videos(request):
     elif channel_id is not None:
         try:
             all_videos = Video.objects.filter(channel_id=channel_id)
+
         except ValueError:
             content = {
                 'message': 'channel_id should be a integer'
