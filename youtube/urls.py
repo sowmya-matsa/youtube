@@ -17,7 +17,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls.static import static
-from entertainment.views import channel, video, videos, comment, comments, sign_up
+from entertainment.views import channel, video, videos, comment, comments, sign_up, category, categories, newsfeed
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -26,11 +26,14 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('category/', category),
+    path('categories/', categories),
     path('channel/', channel),
     path('video/', video),
     path('videos/', videos),
     path('comment/', comment),
     path('comments/', comments),
+    path('newsfeed/', newsfeed),
     path('sign_up/', sign_up),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

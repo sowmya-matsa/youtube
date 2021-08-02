@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import CustomUser, Channel, Video, Comment
+from .models import CustomUser, Channel, Video, Comment, Category
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.contrib.auth import authenticate
@@ -55,6 +55,179 @@ def sign_up(request):
 @authentication_classes([JWTTokenUserAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
+def category(request):
+    # with this method, we can get the single channel
+    if request.method == 'GET':
+        category_id = request.GET.get('category_id', None)
+        user_id = request.user.id
+        user_info = CustomUser.objects.get(id=user_id)
+        if user_info.is_superuser:
+            if category_id is None:
+                content = {
+                    'message': 'category_id is missing'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                category_info = Category.objects.get(id=category_id)
+                content = {
+                    'category_id': category_info.id,
+                    'category_name': category_info.name,
+
+                }
+                return Response(content, status=status.HTTP_200_OK)
+
+            except Category.DoesNotExist:
+                content = {
+                    'message': 'category_id is invalid'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError:
+                content = {
+                    'message': 'category_id should be a integer'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            content = {
+                'message': 'access permission denied'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'POST':
+        # with this method, we can add new channel
+        name = request.POST.get('name', None)
+        user_id = request.user.id
+        user_info = CustomUser.objects.get(id=user_id)
+        if user_info.is_superuser:
+            if name is None:
+                content = {
+                    'message': 'category_name is mandatory '
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                if name.lstrip() == "":
+                    content = {
+                        'message': 'name cannot be empty'
+                    }
+                    return Response(content, status=status.HTTP_400_BAD_REQUEST)
+                new_category = Category.objects.create(
+                    name=name,
+
+                )
+                new_category.save()
+
+                content = {
+                    'message': "new category has been added",
+                    'data': {
+                        'category_id': new_category.id,
+                        'category_name': new_category.name,
+                    }
+                }
+                return Response(content, status=status.HTTP_201_CREATED)
+
+            except Category.DoesNotExist:
+                content = {
+                    'message': 'category_id is invalid'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError as e:
+                content = {
+                    'message': str(e)
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            content = {
+                'message': 'access permission denied'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'PATCH':
+        # we can update the existing channel
+        category_id = request.POST.get("category_id", None)
+        new_name = request.POST.get('name', None)
+        user_id = request.user.id
+        user_info = CustomUser.objects.get(id=user_id)
+        if user_info.is_superuser:
+            if category_id is None:
+                content = {
+                    'message': ' category_id is mandatory '
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+            if new_name is not None and new_name.lstrip() == "":
+                content = {
+                    'message': 'name cannot be empty'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                category_info = Category.objects.get(id=category_id)
+                category_info.name = new_name if new_name is not None else category_info.name
+
+                category_info.save()
+
+                content = {
+                    'message': " category has been updated",
+                    'data': {
+                        'category_id': category_info.id,
+                        'name': category_info.name,
+                    }
+
+                }
+                return Response(content, status=status.HTTP_200_OK)
+
+            except Category.DoesNotExist:
+                content = {
+                    'message': 'category_id  is invalid'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError as e:
+                content = {
+                    'message': str(e)
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            content = {
+                'message': 'access permission denied'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'DELETE':
+        # with this method, we can delete the channels, only it doesn't contain any videos
+        category_id = request.POST.get('category_id', None)
+        user_id = request.user.id
+        user_info = CustomUser.objects.get(id=user_id)
+        if user_info.is_superuser:
+            if category_id is None:
+                content = {
+                    'message': 'category_id is mandatory'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                category_info = Category.objects.get(id=category_id)
+                category_info.delete()
+                content = {
+                    "message": "category has been deleted"
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            except Category.DoesNotExist:
+                content = {
+                    'message': 'category_id is invalid'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+            except ValueError:
+                content = {
+                    'message': 'category_id should be a integer'
+                }
+                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            content = {
+                'message': 'access permission denied'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def channel(request):
     # with this method, we can get the single channel
     if request.method == 'GET':
@@ -77,6 +250,8 @@ def channel(request):
                 image_url = None
             content = {
                 'user': user_id,
+                'channel_id': channel_info.id,
+                'category_id': channel_info.category_id,
                 'name': channel_info.name,
                 'banner': banner_url,
                 'profile_pic': image_url,
@@ -101,6 +276,7 @@ def channel(request):
 
     elif request.method == 'POST':
         # with this method, we can add new channel
+        category_id = request.POST.get('category_id', None)
         name = request.POST.get('name', None)
         banner = request.FILES.get('banner', None)
         profile_pic = request.FILES.get('profile_pic', None)
@@ -119,6 +295,7 @@ def channel(request):
                 }
                 return Response(content, status=status.HTTP_400_BAD_REQUEST)
             new_channel = Channel.objects.create(
+                category_id=category_id,
                 name=name,
                 banner=banner,
                 profile_pic=profile_pic,
@@ -141,6 +318,8 @@ def channel(request):
                 'data': {
                     'user_id': user_id.id,
                     'channel_id': new_channel.id,
+                    'category_id': new_channel.category_id,
+                    'category_name': new_channel.category.name,
                     'name': new_channel.name,
                     'banner': banner_url,
                     'profile_pic': profile_pic_url,
@@ -164,6 +343,7 @@ def channel(request):
 
     elif request.method == 'PATCH':
         # we can update the existing channel
+        new_category_id = request.POST.get("category_id", None)
         channel_id = request.POST.get("channel_id", None)
         new_name = request.POST.get('name', None)
         new_banner = request.FILES.get('banner', None)
@@ -187,6 +367,7 @@ def channel(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
             channel_info = Channel.objects.get(id=channel_id, user_id=user_id)
+            channel_info.category_id = new_category_id if new_category_id is not None else channel_info.category_id
             channel_info.name = new_name if new_name is not None else channel_info.name
             channel_info.banner = new_banner if new_banner is not None else channel_info.banner
             channel_info.profile_pic = new_profile_pic if new_profile_pic is not None else channel_info.profile_pic
@@ -206,6 +387,8 @@ def channel(request):
                 'data': {
                     'user_id': user_id,
                     'channel_id': channel_info.id,
+                    'category_id': channel_info.category_id,
+                    'category_name': channel_info.category.name,
                     'name': channel_info.name,
                     'banner_url': banner_url,
                     'profile_pic_url': profile_pic_url,
@@ -297,6 +480,8 @@ def video(request):
                 'channel_id': video_info.channel_id,
                 'channel_name': video_info.channel.name,
                 'channel_profile_image': profile_pic_url,
+                'category_id': video_info.channel.category_id,
+                'category_name': video_info.channel.category.name,
                 'created_at': video_info.created_at,
                 'updated_at': video_info.updated_at
             }
@@ -365,7 +550,9 @@ def video(request):
                     'updated_at': new_video.updated_at,
                     'channel_id': new_video.channel_id,
                     'channel_name': new_video.channel.name,
-                    'channel_profile': profile_pic_url
+                    'channel_profile': profile_pic_url,
+                    'category_id': new_video.channel.category_id,
+                    'category_name': new_video.channel.category.name,
                 }
             }
             return Response(content, status=status.HTTP_201_CREATED)
@@ -440,7 +627,10 @@ def video(request):
                     'updated_at': video_info.updated_at,
                     'channel_id': video_info.channel.id,
                     'channel_name': video_info.channel.name,
-                    'channel_profile': profile_pic_url}
+                    'channel_profile': profile_pic_url,
+                    'category_id': video_info.channel.category_id,
+                    'category_name': video_info.channel.category.name,
+                }
 
             }
             return Response(content, status=status.HTTP_200_OK)
@@ -799,3 +989,104 @@ def comments(request):
         final_comments.append(content)
 
     return Response(final_comments, status=status.HTTP_200_OK)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def categories(request):
+    user_id = request.user.id
+    user_info = CustomUser.objects.get(id=user_id)
+    if user_info.is_superuser:
+        all_categories = Category.objects.all()
+        final_categories = []
+        for temp_category in all_categories:
+            content = {
+                'category_id': temp_category.id,
+                'name': temp_category.name,
+            }
+            final_categories.append(content)
+        return Response(final_categories, status=status.HTTP_200_OK)
+    else:
+        content = {
+            'message': 'access permission denied'
+        }
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def newsfeed(request):
+    category_id = request.GET.get('category_id', None)
+    if category_id is None:
+        all_categories = Category.objects.all()
+    elif category_id is not None:
+        all_categories = Category.objects.filter(id=category_id)
+    content = []
+    for data in all_categories:
+        all_channels = Channel.objects.filter(category_id=category_id)
+        category_channels = []
+        for item_channel in all_channels:
+            all_videos = Video.objects.filter(channel_id=category_id)
+            channel_videos = []
+            for item_video in all_videos:
+                all_comments = Comment.objects.filter(video_id=category_id)
+                video_comments = []
+                for item_comment in all_comments:
+                    if item_comment.commenter_image:
+                        image_url = item_comment.commenter_image.url
+                    else:
+                        image_url = None
+                    comment_temp = {
+                        'comment_id': item_comment.id,
+                        'commenter_name': item_comment.commenter_name,
+                        'commenter_image': image_url,
+                        'comment': item_comment.comment,
+                        'likes': item_comment.likes,
+                        'created_at': item_comment.created_at,
+                        'updated_at': item_comment.updated_at
+                    }
+                    video_comments.append(comment_temp)
+                if item_video.thumbnail:
+                    image_url = item_video.thumbnail.url
+                else:
+                    image_url = None
+                video_temp = {
+                    'name': item_video.name,
+                    'description': item_video.description,
+                    'thumbnail': image_url,
+                    'likes': item_video.likes,
+                    'views': item_video.views,
+                    'created_at': item_video.created_at,
+                    'updated_at': item_video.updated_at,
+                    'comments': video_comments
+                }
+                channel_videos.append(video_temp)
+            if item_channel.banner:
+                banner_url = item_channel.banner.url
+            else:
+                banner_url = None
+            if item_channel.profile_pic:
+                image_url = item_channel.profile_pic.url
+            else:
+                image_url = None
+            channel_temp = {
+                'name': item_channel.name,
+                'banner': banner_url,
+                'profile_pic': image_url,
+                'description': item_channel.description,
+                'subscribers': item_channel.subscribers,
+                'created_at': item_channel.created_at,
+                'updated_at': item_channel.updated_at,
+                'videos': channel_videos
+            }
+            category_channels.append(channel_temp)
+
+        temp = {
+            'category_id': data.id,
+            'category_name': data.name,
+            'channels': category_channels,
+        }
+        content.append(temp)
+    return Response(content, status=status.HTTP_200_OK)

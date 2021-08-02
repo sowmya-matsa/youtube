@@ -10,8 +10,19 @@ class CustomUser(AbstractUser):
         return str(self.id)
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name_plural = "categories"
+
+    def __str__(self):
+        return str(self.id) + ',' + str(self.name)
+
+
 class Channel(models.Model):
     user_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
     banner = models.ImageField(max_length=255)
     profile_pic = models.ImageField(blank=True, null=True, default=None)
