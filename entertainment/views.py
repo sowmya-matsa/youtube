@@ -960,6 +960,8 @@ def subscribe(request):
 def videos(request):
     channel_id = request.GET.get('channel_id', None)
     user_id = request.user.id
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
     # with this method, we can get all the videos or else we can get the videos belong to the single channel
     if channel_id is None:
         all_videos = Video.objects.filter(user_id=user_id)
@@ -979,6 +981,7 @@ def videos(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_videos = []
+    filtered_videos = all_videos[(page * limit):(page * limit) + limit]
     for temp_video in all_videos:
         if temp_video.thumbnail:
             image_url = temp_video.thumbnail.url
@@ -1004,9 +1007,16 @@ def videos(request):
             'channel_profile': profile_pic_url
 
         }
-        final_videos.append(content)
 
-    return Response(final_videos, status=status.HTTP_200_OK)
+        final_videos.append(content)
+    content = {
+        'videos': final_videos,
+        'page': page,
+        'limit': limit,
+        'count': len(final_videos),
+        'total_count': filtered_videos.count()
+    }
+    return Response(content, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
@@ -1015,6 +1025,8 @@ def videos(request):
 def comments(request):
     video_id = request.GET.get('video_id', None)
     user_id = request.user.id
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
     # with this method, we can get all the comments or else we can get the comments belong to the single video
     if video_id is None:
         all_comments = Comment.objects.filter(user_id=user_id)
@@ -1028,6 +1040,7 @@ def comments(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_comments = []
+    filtered_comments = all_comments[(page * limit):(page * limit) + limit]
     for temp_comment in all_comments:
         if temp_comment.commenter_image:
             image_url = temp_comment.commenter_image.url
@@ -1053,8 +1066,14 @@ def comments(request):
 
         }
         final_comments.append(content)
-
-    return Response(final_comments, status=status.HTTP_200_OK)
+    content = {
+        'videos': final_comments,
+        'page': page,
+        'limit': limit,
+        'count': len(final_comments),
+        'total_count': filtered_comments.count()
+    }
+    return Response(content, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
@@ -1063,12 +1082,16 @@ def comments(request):
 def channel_subscribers(request):
     channel_id = request.GET.get("channel_id", None)
     user_id = request.user.id
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
+
     # with this method, we can get the all subscribers belong to the channel owner
 
     all_channels = Channel.objects.filter(id=channel_id, user_id=user_id)
     final_subscriptions = []
     for temp_channel in all_channels:
         all_subscribers = Subscriber.objects.filter(channel_id=channel_id)
+        filtered_channel_subscribers = all_subscribers[(page * limit):(page * limit) + limit]
         subscriptions = []
         for temp_subscriber in all_subscribers:
             content = {
@@ -1083,7 +1106,11 @@ def channel_subscribers(request):
         content = {
             'user_id': user_id,
             'channel_profile_pic': profile_pic_url,
-            'subscribers': subscriptions
+            'subscribers': subscriptions,
+            'page': page,
+            'limit': limit,
+            'count': len(filtered_channel_subscribers),
+            'total_count': len(subscriptions),
 
         }
         final_subscriptions.append(content)
@@ -1096,7 +1123,8 @@ def channel_subscribers(request):
 @api_view(['GET'])
 def user_subscriptions(request):
     user_id = request.user.id
-
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
     # with this method, we can get the all subscribers belong to the user
     try:
         all_subscribers = Subscriber.objects.filter(user_id=user_id).orderby("-created_at")
@@ -1107,7 +1135,7 @@ def user_subscriptions(request):
         }
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_subscribers = []
-
+    filtered_channel_subscribers = all_subscribers[(page * limit):(page * limit) + limit]
     for temp_subscribers in all_subscribers:
         if temp_subscribers.channel.profile_pic:
             profile_pic_url = temp_subscribers.channel.profile_pic.url
@@ -1119,8 +1147,14 @@ def user_subscriptions(request):
             'name': temp_subscribers.user.username
         }
         final_subscribers.append(content)
-
-    return Response(final_subscribers, status=status.HTTP_200_OK)
+    content = {
+        'videos': final_subscribers,
+        'page': page,
+        'limit': limit,
+        'count': len(final_subscribers),
+        'total_count': filtered_channel_subscribers.count()
+    }
+    return Response(content, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
@@ -1128,6 +1162,9 @@ def user_subscriptions(request):
 @api_view(['GET'])
 def categories(request):
     all_categories = Category.objects.all()
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 2))
+    filtered_categories = all_categories[(page * limit):(page * limit) + limit]
     final_categories = []
     for temp_category in all_categories:
         content = {
@@ -1135,7 +1172,14 @@ def categories(request):
             'name': temp_category.name,
         }
         final_categories.append(content)
-    return Response(final_categories, status=status.HTTP_200_OK)
+    temp = {
+        'videos': final_categories,
+        'page': page,
+        'limit': limit,
+        'count': len(final_categories),
+        'total_count': filtered_categories.count()
+    }
+    return Response(temp, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
@@ -1143,7 +1187,8 @@ def categories(request):
 @api_view(['GET'])
 def category_channels(request):
     category_id = request.GET.get('category_id', None)
-
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
     # with this method, we can get all the videos or else we can get the videos belong to the single channel
     if category_id is None:
         all_channels = Channel.objects.all()
@@ -1163,6 +1208,7 @@ def category_channels(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_channels = []
+    filtered_category_channels = all_channels[(page * limit):(page * limit) + limit]
     for temp_channel in all_channels:
         if temp_channel.banner:
             banner_url = temp_channel.banner.url
@@ -1184,8 +1230,14 @@ def category_channels(request):
 
         }
         final_channels.append(content)
-
-    return Response(final_channels, status=status.HTTP_200_OK)
+    content = {
+        'videos': final_channels,
+        'page': page,
+        'limit': limit,
+        'count': len(final_channels),
+        'total_count': filtered_category_channels.count()
+    }
+    return Response(content, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
