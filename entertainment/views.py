@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import CustomUser, Channel, Video, Comment, Category
+from .models import CustomUser, Channel, Video, Comment, Category, Subscriber
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.contrib.auth import authenticate
@@ -59,36 +59,28 @@ def category(request):
     # with this method, we can get the single channel
     if request.method == 'GET':
         category_id = request.GET.get('category_id', None)
-        user_id = request.user.id
-        user_info = CustomUser.objects.get(id=user_id)
-        if user_info.is_superuser:
-            if category_id is None:
-                content = {
-                    'message': 'category_id is missing'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                category_info = Category.objects.get(id=category_id)
-                content = {
-                    'category_id': category_info.id,
-                    'category_name': category_info.name,
-
-                }
-                return Response(content, status=status.HTTP_200_OK)
-
-            except Category.DoesNotExist:
-                content = {
-                    'message': 'category_id is invalid'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            except ValueError:
-                content = {
-                    'message': 'category_id should be a integer'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        else:
+        if category_id is None:
             content = {
-                'message': 'access permission denied'
+                'message': 'category_id is missing'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            category_info = Category.objects.get(id=category_id)
+            content = {
+                'category_id': category_info.id,
+                'category_name': category_info.name,
+
+            }
+            return Response(content, status=status.HTTP_200_OK)
+
+        except Category.DoesNotExist:
+            content = {
+                'message': 'category_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            content = {
+                'message': 'category_id should be a integer'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
@@ -192,35 +184,27 @@ def category(request):
     elif request.method == 'DELETE':
         # with this method, we can delete the channels, only it doesn't contain any videos
         category_id = request.POST.get('category_id', None)
-        user_id = request.user.id
-        user_info = CustomUser.objects.get(id=user_id)
-        if user_info.is_superuser:
-            if category_id is None:
-                content = {
-                    'message': 'category_id is mandatory'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                category_info = Category.objects.get(id=category_id)
-                category_info.delete()
-                content = {
-                    "message": "category has been deleted"
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-            except Category.DoesNotExist:
-                content = {
-                    'message': 'category_id is invalid'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-            except ValueError:
-                content = {
-                    'message': 'category_id should be a integer'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        else:
+        if category_id is None:
             content = {
-                'message': 'access permission denied'
+                'message': 'category_id is mandatory'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            category_info = Category.objects.get(id=category_id)
+            category_info.delete()
+            content = {
+                "message": "category has been deleted"
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except Category.DoesNotExist:
+            content = {
+                'message': 'category_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+        except ValueError:
+            content = {
+                'message': 'category_id should be a integer'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
@@ -256,7 +240,6 @@ def channel(request):
                 'banner': banner_url,
                 'profile_pic': image_url,
                 'description': channel_info.description,
-                'subscribers': channel_info.subscribers,
                 'created_at': channel_info.created_at,
                 'updated_at': channel_info.updated_at,
 
@@ -281,8 +264,7 @@ def channel(request):
         banner = request.FILES.get('banner', None)
         profile_pic = request.FILES.get('profile_pic', None)
         description = request.POST.get("description", None)
-        subscribers = request.POST.get("subscribers", None)
-        user_id = request.user
+        user_id = request.user.id
         if name is None or banner is None or profile_pic is None or description is None:
             content = {
                 'message': 'channel_name or banner or profile_pic or description  is mandatory '
@@ -300,7 +282,6 @@ def channel(request):
                 banner=banner,
                 profile_pic=profile_pic,
                 description=description,
-                subscribers=subscribers,
                 user_id=user_id
 
             )
@@ -324,7 +305,6 @@ def channel(request):
                     'banner': banner_url,
                     'profile_pic': profile_pic_url,
                     'description': new_channel.description,
-                    'subscribers': new_channel.subscribers,
                     'created_at': new_channel.created_at,
                     'updated_at': new_channel.updated_at}
             }
@@ -349,7 +329,6 @@ def channel(request):
         new_banner = request.FILES.get('banner', None)
         new_profile_pic = request.FILES.get('profile_pic', None)
         new_description = request.POST.get("description", None)
-        new_subscribers = request.POST.get("subscribers", None)
         created_at = request.POST.get("created_at", None)
         updated_at = request.POST.get("updated_at", None)
         user_id = request.user.id
@@ -372,7 +351,6 @@ def channel(request):
             channel_info.banner = new_banner if new_banner is not None else channel_info.banner
             channel_info.profile_pic = new_profile_pic if new_profile_pic is not None else channel_info.profile_pic
             channel_info.description = new_description if new_description is not None else channel_info.description
-            channel_info.subscribers = new_subscribers if new_subscribers is not None else channel_info.subscribers
             channel_info.save()
             if channel_info.banner:
                 banner_url = channel_info.banner.url
@@ -393,7 +371,6 @@ def channel(request):
                     'banner_url': banner_url,
                     'profile_pic_url': profile_pic_url,
                     'description': channel_info.description,
-                    'subscribers': channel_info.subscribers,
                     'created_at': channel_info.created_at,
                     'updated_at': channel_info.updated_at}
 
@@ -477,6 +454,7 @@ def video(request):
                 'thumbnail': image_url,
                 'likes': video_info.likes,
                 'views': video_info.views,
+                "video_link": video_info.video_link,
                 'channel_id': video_info.channel_id,
                 'channel_name': video_info.channel.name,
                 'channel_profile_image': profile_pic_url,
@@ -503,12 +481,13 @@ def video(request):
         description = request.POST.get('description', None)
         channel_id = request.POST.get('channel_id', None)
         thumbnail = request.FILES.get('thumbnail', None)
+        video_link = request.POST.get("video_link", None)
         likes = request.POST.get("likes", None)
         views = request.POST.get("views", None)
         user_id = request.user.id
-        if name is None or description is None or channel_id is None or thumbnail is None:
+        if name is None or description is None or channel_id is None or thumbnail is None or video_link is None:
             content = {
-                'message': 'video_name or description or channel_id or thumbnail is mandatory '
+                'message': 'video_name or description or channel_id or thumbnail or video_link is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         if name.lstrip() == "":
@@ -525,6 +504,7 @@ def video(request):
                 thumbnail=thumbnail,
                 likes=likes,
                 views=views,
+                video_link=video_link,
                 user_id=channel_info.user_id
             )
             new_video.save()
@@ -546,6 +526,7 @@ def video(request):
                     'thumbnail': image_url,
                     'likes': new_video.likes,
                     'views': new_video.views,
+                    'video_link': new_video.video_link,
                     'created_at': new_video.created_at,
                     'updated_at': new_video.updated_at,
                     'channel_id': new_video.channel_id,
@@ -582,6 +563,7 @@ def video(request):
         video_id = request.POST.get("video_id", None)
         new_name = request.POST.get('name', None)
         new_description = request.POST.get('description', None)
+        new_video_link = request.POST.get("video_link", None)
         channel_id = request.POST.get('channel_id', None)
         new_thumbnail = request.FILES.get('thumbnail', None)
         new_likes = request.POST.get("likes", None)
@@ -603,6 +585,7 @@ def video(request):
             video_info.description = new_description if new_description is not None else video_info.description
             video_info.thumbnail = new_thumbnail if new_thumbnail is not None else video_info.thumbnail
             video_info.likes = new_likes if new_likes is not None else video_info.likes
+            video_info.video_link = new_video_link if new_video_link is not None else video_info.video_link
             video_info.views = new_views if new_views is not None else video_info.views
             video_info.save()
             if video_info.thumbnail:
@@ -623,6 +606,7 @@ def video(request):
                     'thumbnail': image_url,
                     'likes': video_info.likes,
                     'views': video_info.views,
+                    "video_link": video_info.video_link,
                     'created_at': video_info.created_at,
                     'updated_at': video_info.updated_at,
                     'channel_id': video_info.channel.id,
@@ -891,6 +875,87 @@ def comment(request):
 
 @authentication_classes([JWTTokenUserAuthentication])
 @permission_classes([IsAuthenticated])
+@api_view(['POST', 'DELETE'])
+def subscribe(request):
+    if request.method == 'POST':
+        # with this method,we can add new subscribe
+        channel_id = request.POST.get("channel_id", None)
+        user_id = request.user.id
+
+        if channel_id is None or user_id is None:
+            content = {
+                'message': 'channel_id or user_id  is mandatory '
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            Subscriber.objects.get(channel_id=channel_id, user_id=user_id)
+            content = {
+                "message": "you have already subscribed this channel"
+
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except Subscriber.DoesNotExist:
+            new_subscriber = Subscriber.objects.create(
+                channel_id=channel_id,
+                user_id=user_id
+            )
+            new_subscriber.save()
+            if new_subscriber.channel.profile_pic:
+                profile_pic_url = new_subscriber.channel.profile_pic.url
+            else:
+                profile_pic_url = None
+            content = {
+                'message': "new subscriber has been added",
+                'data': {
+                    'user_id': int(new_subscriber.user_id),
+                    'channel_id': new_subscriber.channel_id,
+                    'channel_name': new_subscriber.channel.name,
+                    'channel_profile': profile_pic_url,
+
+                }
+            }
+            return Response(content, status=status.HTTP_201_CREATED)
+        except Channel.DoesNotExist:
+            content = {
+                'message': 'channel_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            content = {
+                'message': str(e)
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # with this method, we can delete the video
+        subscriber_id = request.POST.get('subscriber_id', None)
+
+        if subscriber_id is None:
+            content = {
+                'message': 'subscriber_id is mandatory'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            subscriber_info = Subscriber.objects.get(id=subscriber_id)
+            subscriber_info.delete()
+            content = {
+                'message': 'subscriber has been deactivated'
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        except Subscriber.DoesNotExist:
+            content = {
+                'message': 'subscriber_id is invalid'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            content = {
+                'message': 'subscriber_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def videos(request):
     channel_id = request.GET.get('channel_id', None)
@@ -931,6 +996,7 @@ def videos(request):
             'thumbnail': image_url,
             'likes': temp_video.likes,
             'views': temp_video.views,
+            "video_link": temp_video.video_link,
             'created_at': temp_video.created_at,
             'updated_at': temp_video.updated_at,
             'channel_id': temp_video.channel_id,
@@ -994,24 +1060,132 @@ def comments(request):
 @authentication_classes([JWTTokenUserAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET'])
-def categories(request):
+def channel_subscribers(request):
+    channel_id = request.GET.get("channel_id", None)
     user_id = request.user.id
-    user_info = CustomUser.objects.get(id=user_id)
-    if user_info.is_superuser:
-        all_categories = Category.objects.all()
-        final_categories = []
-        for temp_category in all_categories:
+    # with this method, we can get the all subscribers belong to the channel owner
+
+    all_channels = Channel.objects.filter(id=channel_id, user_id=user_id)
+    final_subscriptions = []
+    for temp_channel in all_channels:
+        all_subscribers = Subscriber.objects.filter(channel_id=channel_id)
+        subscriptions = []
+        for temp_subscriber in all_subscribers:
             content = {
-                'category_id': temp_category.id,
-                'name': temp_category.name,
+
+                'name': temp_subscriber.user.username,
             }
-            final_categories.append(content)
-        return Response(final_categories, status=status.HTTP_200_OK)
-    else:
+            subscriptions.append(content)
+        if temp_channel.profile_pic:
+            profile_pic_url = temp_channel.profile_pic.url
+        else:
+            profile_pic_url = None
         content = {
-            'message': 'access permission denied'
+            'user_id': user_id,
+            'channel_profile_pic': profile_pic_url,
+            'subscribers': subscriptions
+
+        }
+        final_subscriptions.append(content)
+
+    return Response(final_subscriptions, status=status.HTTP_200_OK)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def user_subscriptions(request):
+    user_id = request.user.id
+
+    # with this method, we can get the all subscribers belong to the user
+    try:
+        all_subscribers = Subscriber.objects.filter(user_id=user_id).orderby("-created_at")
+
+    except Subscriber.DoesNotExist:
+        content = {
+            'message': 'subscribers not found'
         }
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    final_subscribers = []
+
+    for temp_subscribers in all_subscribers:
+        if temp_subscribers.channel.profile_pic:
+            profile_pic_url = temp_subscribers.channel.profile_pic.url
+        else:
+            profile_pic_url = None
+        content = {
+            'profile_pic': profile_pic_url,
+            'user_id': temp_subscribers.user_id,
+            'name': temp_subscribers.user.username
+        }
+        final_subscribers.append(content)
+
+    return Response(final_subscribers, status=status.HTTP_200_OK)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def categories(request):
+    all_categories = Category.objects.all()
+    final_categories = []
+    for temp_category in all_categories:
+        content = {
+            'category_id': temp_category.id,
+            'name': temp_category.name,
+        }
+        final_categories.append(content)
+    return Response(final_categories, status=status.HTTP_200_OK)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+def category_channels(request):
+    category_id = request.GET.get('category_id', None)
+
+    # with this method, we can get all the videos or else we can get the videos belong to the single channel
+    if category_id is None:
+        all_channels = Channel.objects.all()
+
+    elif category_id is not None:
+        try:
+            all_channels = Channel.objects.filter(category_id=category_id)
+
+        except ValueError:
+            content = {
+                'message': 'category_id should be a integer'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        except Channel.DoesNotExist:
+            content = {
+                'message': 'channels not found'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+    final_channels = []
+    for temp_channel in all_channels:
+        if temp_channel.banner:
+            banner_url = temp_channel.banner.url
+        else:
+            banner_url = None
+        if temp_channel.profile_pic:
+            image_url = temp_channel.profile_pic.url
+        else:
+            image_url = None
+        content = {
+            'channel_id': temp_channel.id,
+            'category_id': temp_channel.category_id,
+            'name': temp_channel.name,
+            'banner': banner_url,
+            'profile_pic': image_url,
+            'description': temp_channel.description,
+            'created_at': temp_channel.created_at,
+            'updated_at': temp_channel.updated_at,
+
+        }
+        final_channels.append(content)
+
+    return Response(final_channels, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])

@@ -17,7 +17,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls.static import static
-from entertainment.views import channel, video, videos, comment, comments, sign_up, category, categories, newsfeed
+from entertainment.views import channel, video, videos, comment, comments, sign_up, category, categories, newsfeed, category_channels, subscribe, channel_subscribers, user_subscriptions
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -29,6 +29,10 @@ urlpatterns = [
     path('category/', category),
     path('categories/', categories),
     path('channel/', channel),
+    path('category_channels/', category_channels),
+    path('subscribe/', subscribe),
+    path('channel_subscribers/', channel_subscribers),
+    path('user_subscriptions/',user_subscriptions),
     path('video/', video),
     path('videos/', videos),
     path('comment/', comment),

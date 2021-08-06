@@ -1,8 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-
 # Create your models here.
+from django.utils import timezone
+
+
 class CustomUser(AbstractUser):
     email = models.CharField(max_length=255, unique=True)
 
@@ -27,7 +29,6 @@ class Channel(models.Model):
     banner = models.ImageField(max_length=255)
     profile_pic = models.ImageField(blank=True, null=True, default=None)
     description = models.TextField()
-    subscribers = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,6 +44,7 @@ class Video(models.Model):
     thumbnail = models.ImageField(blank=True, null=True, default=None)
     likes = models.IntegerField(default=0)
     views = models.IntegerField(default=0)
+    video_link = models.TextField(default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -59,3 +61,9 @@ class Comment(models.Model):
     likes = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Subscriber(models.Model):
+    channel = models.ForeignKey(Channel, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    created_at = models.DateTimeField(auto_now_add=True)
