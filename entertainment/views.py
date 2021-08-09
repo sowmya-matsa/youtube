@@ -1302,7 +1302,6 @@ def newsfeed(request):
                 'banner': banner_url,
                 'profile_pic': image_url,
                 'description': item_channel.description,
-                'subscribers': item_channel.subscribers,
                 'created_at': item_channel.created_at,
                 'updated_at': item_channel.updated_at,
                 'videos': channel_videos
