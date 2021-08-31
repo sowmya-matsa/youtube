@@ -23,7 +23,7 @@ class Category(models.Model):
 
 
 class Channel(models.Model):
-    user_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
     banner = models.ImageField(max_length=255)
@@ -37,7 +37,7 @@ class Channel(models.Model):
 
 
 class Video(models.Model):
-    user_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     channel = models.ForeignKey(Channel, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -53,7 +53,7 @@ class Video(models.Model):
 
 
 class Comment(models.Model):
-    user_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     video = models.ForeignKey(Video, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     commenter_name = models.CharField(max_length=255, default="")
     commenter_image = models.ImageField(blank=True, null=True, default=None)

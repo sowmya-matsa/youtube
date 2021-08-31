@@ -13,17 +13,17 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 class ChannelAdmin(admin.ModelAdmin):
-    list_display = ["id", "user_id", "category", "name", "banner", "profile_pic", "description",
+    list_display = ["id", "user", "category", "name", "banner", "profile_pic", "description",
                     "created_at", "updated_at"]
 
 
 class VideoAdmin(admin.ModelAdmin):
-    list_display = ["id", "user_id", "channel", "name", "description", "thumbnail", "likes", "views", "video_link",
+    list_display = ["id", "user", "channel", "name", "description", "thumbnail", "likes", "views", "video_link",
                     "created_at", "updated_at"]
 
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ["id", "user_id", "video", "commenter_name", "commenter_image", "comment", "likes", "created_at",
+    list_display = ["id", "user", "video", "commenter_name", "commenter_image", "comment", "likes", "created_at",
                     "updated_at"]
 
 

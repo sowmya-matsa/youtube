@@ -265,9 +265,9 @@ def channel(request):
         profile_pic = request.FILES.get('profile_pic', None)
         description = request.POST.get("description", None)
         user_id = request.user.id
-        if name is None or banner is None or profile_pic is None or description is None:
+        if name is None or banner is None or profile_pic is None or description is None or category_id is None:
             content = {
-                'message': 'channel_name or banner or profile_pic or description  is mandatory '
+                'message': 'category_id or channel_name or banner or profile_pic or description  is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -297,7 +297,7 @@ def channel(request):
             content = {
                 'message': "new channel has been added",
                 'data': {
-                    'user_id': user_id.id,
+                    'user_id': user_id,
                     'channel_id': new_channel.id,
                     'category_id': new_channel.category_id,
                     'category_name': new_channel.category.name,
@@ -1251,13 +1251,13 @@ def newsfeed(request):
         all_categories = Category.objects.filter(id=category_id)
     content = []
     for data in all_categories:
-        all_channels = Channel.objects.filter(category_id=category_id)
+        all_channels = Channel.objects.filter(category_id=category.id)
         category_channels = []
         for item_channel in all_channels:
-            all_videos = Video.objects.filter(channel_id=category_id)
+            all_videos = Video.objects.filter(channel_id=category.id)
             channel_videos = []
             for item_video in all_videos:
-                all_comments = Comment.objects.filter(video_id=category_id)
+                all_comments = Comment.objects.filter(video_id=category.id)
                 video_comments = []
                 for item_comment in all_comments:
                     if item_comment.commenter_image:
