@@ -19,7 +19,7 @@ def sign_up(request):
         confirm_password = request.POST.get("confirm_password", None)
         if username is None or password is None or confirm_password is None:
             content = {
-                'message': 'username or password or category_id or confirm_password  is mandatory '
+                'message': 'username or password or confirm_password  is mandatory '
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
@@ -33,23 +33,22 @@ def sign_up(request):
                 "message": "name cannot be empty or spacing is not allowed or name cannot be number"
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            try:
 
-                new_user = CustomUser.objects.create_user(username=username, password=password)
-                new_user.save()
-                content = {
-                    'message': "new user is added",
-                    'username': new_user.username,
-                    "user_id": new_user.id
+        try:
+            new_user = CustomUser.objects.create_user(username=username, password=password)
+            new_user.save()
+            content = {
+                'message': "new user is added",
+                'username': new_user.username,
+                "user_id": new_user.id
 
-                }
-                return Response(content, status=status.HTTP_201_CREATED)
-            except IntegrityError:
-                content = {
-                    'message': 'user already exists'
-                }
-                return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            }
+            return Response(content, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            content = {
+                'message': 'user already exists'
+            }
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
