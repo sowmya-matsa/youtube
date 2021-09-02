@@ -235,6 +235,7 @@ def channel(request):
                 'user': user_id,
                 'channel_id': channel_info.id,
                 'category_id': channel_info.category_id,
+                'category_name': channel_info.category.name,
                 'name': channel_info.name,
                 'banner': banner_url,
                 'profile_pic': image_url,
