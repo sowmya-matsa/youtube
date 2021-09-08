@@ -17,7 +17,8 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls.static import static
-from entertainment.views import channel, video, videos, comment, comments, sign_up, category, categories, newsfeed, category_channels, subscribe, channel_subscribers, user_subscriptions
+from entertainment.views import channel, video, videos, comment, comments, sign_up, category, categories, newsfeed, \
+    category_channels, subscribe, channel_subscribers, user_subscriptions, videos_variations
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -32,12 +33,13 @@ urlpatterns = [
     path('category_channels/', category_channels),
     path('subscribe/', subscribe),
     path('channel_subscribers/', channel_subscribers),
-    path('user_subscriptions/',user_subscriptions),
+    path('user_subscriptions/', user_subscriptions),
     path('video/', video),
     path('videos/', videos),
     path('comment/', comment),
     path('comments/', comments),
     path('newsfeed/', newsfeed),
+    path('videos_variations/',videos_variations),
     path('sign_up/', sign_up),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
