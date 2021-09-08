@@ -6,7 +6,6 @@ from django.utils import timezone
 
 
 class CustomUser(AbstractUser):
-    email = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return str(self.id)

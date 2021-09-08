@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from django.db import IntegrityError
 
 
+
 # Create your views here.
 @api_view(['POST'])
 def sign_up(request):
@@ -1127,7 +1128,7 @@ def user_subscriptions(request):
     limit = int(request.GET.get("limit", 5))
     # with this method, we can get the all subscribers belong to the user
     try:
-        all_subscribers = Subscriber.objects.filter(user_id=user_id).orderby("-created_at")
+        all_subscribers = Subscriber.objects.filter(user_id=user_id).order_by("-created_at")
 
     except Subscriber.DoesNotExist:
         content = {
@@ -1315,3 +1316,148 @@ def newsfeed(request):
         }
         content.append(temp)
     return Response(content, status=status.HTTP_200_OK)
+
+
+@authentication_classes([JWTTokenUserAuthentication])
+@permission_classes([IsAuthenticated])
+@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
+def videos_variations(request):
+    try:
+        video_type = int(request.GET.get("video_type", None))
+        if video_type == 1:
+            page = int(request.GET.get('page', 0))
+            limit = int(request.GET.get("limit", 5))
+            # with this method, we can get all the videos in the descending order based on views
+            all_videos = Video.objects.filter().order_by("-views")
+            final_videos = []
+            filtered_videos = all_videos[(page * limit):(page * limit) + limit]
+            for temp_video in all_videos:
+                if temp_video.thumbnail:
+                    image_url = temp_video.thumbnail.url
+                else:
+                    image_url = None
+                if temp_video.channel.profile_pic:
+                    profile_pic_url = temp_video.channel.profile_pic.url
+                else:
+                    profile_pic_url = None
+                content = {
+                    'user_id': temp_video.user_id,
+                    'video_id': temp_video.id,
+                    'name': temp_video.name,
+                    'description': temp_video.description,
+                    'thumbnail': image_url,
+                    'likes': temp_video.likes,
+                    'views': temp_video.views,
+                    "video_link": temp_video.video_link,
+                    'created_at': temp_video.created_at,
+                    'updated_at': temp_video.updated_at,
+                    'channel_id': temp_video.channel.id,
+                    'channel_name': temp_video.channel.name,
+                    'channel_profile': profile_pic_url
+
+                }
+                final_videos.append(content)
+            content = {
+                'message': "descending order of all the videos based on number of views",
+                'videos': final_videos,
+                'page': page,
+                'limit': limit,
+                'count': len(final_videos),
+                'total_count': filtered_videos.count()
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        elif video_type == 2:
+            page = int(request.GET.get('page', 0))
+            limit = int(request.GET.get("limit", 5))
+            # with this method, we can get all the videos in the descending order based on likes
+            all_videos = Video.objects.filter().order_by("-likes")
+            final_videos = []
+            filtered_videos = all_videos[(page * limit):(page * limit) + limit]
+            for temp_video in all_videos:
+                if temp_video.thumbnail:
+                    image_url = temp_video.thumbnail.url
+                else:
+                    image_url = None
+                if temp_video.channel.profile_pic:
+                    profile_pic_url = temp_video.channel.profile_pic.url
+                else:
+                    profile_pic_url = None
+                content = {
+                    'user_id': temp_video.user_id,
+                    'video_id': temp_video.id,
+                    'name': temp_video.name,
+                    'description': temp_video.description,
+                    'thumbnail': image_url,
+                    'likes': temp_video.likes,
+                    'views': temp_video.views,
+                    "video_link": temp_video.video_link,
+                    'created_at': temp_video.created_at,
+                    'updated_at': temp_video.updated_at,
+                    'channel_id': temp_video.channel.id,
+                    'channel_name': temp_video.channel.name,
+                    'channel_profile': profile_pic_url
+
+                }
+                final_videos.append(content)
+            content = {
+                'message': "descending order of all the videos based on number of likes",
+                'videos': final_videos,
+                'page': page,
+                'limit': limit,
+                'count': len(final_videos),
+                'total_count': filtered_videos.count()
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        elif video_type == 3:
+            page = int(request.GET.get('page', 0))
+            limit = int(request.GET.get("limit", 5))
+            # with this method, we can get all the videos in the random order
+            all_videos = Video.objects.filter().order_by('?')
+            final_videos = []
+            filtered_videos = all_videos[(page * limit):(page * limit) + limit]
+            for temp_video in all_videos:
+                if temp_video.thumbnail:
+                    image_url = temp_video.thumbnail.url
+                else:
+                    image_url = None
+                if temp_video.channel.profile_pic:
+                    profile_pic_url = temp_video.channel.profile_pic.url
+                else:
+                    profile_pic_url = None
+                content = {
+                    'user_id': temp_video.user_id,
+                    'video_id': temp_video.id,
+                    'name': temp_video.name,
+                    'description': temp_video.description,
+                    'thumbnail': image_url,
+                    'likes': temp_video.likes,
+                    'views': temp_video.views,
+                    "video_link": temp_video.video_link,
+                    'created_at': temp_video.created_at,
+                    'updated_at': temp_video.updated_at,
+                    'channel_id': temp_video.channel.id,
+                    'channel_name': temp_video.channel.name,
+                    'channel_profile': profile_pic_url
+
+                }
+
+                final_videos.append(content)
+            content = {
+                'message': "videos in the random manner",
+                'videos': final_videos,
+                'page': page,
+                'limit': limit,
+                'count': len(final_videos),
+                'total_count': filtered_videos.count()
+            }
+            return Response(content, status=status.HTTP_200_OK)
+        elif video_type >= 4:
+            content = {
+                "message": "invalid video type"
+            }
+            return Response(content, status=status.HTTP_200_OK)
+    except ValueError:
+        content = {
+            'message': 'video type should be a integer'
+        }
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
