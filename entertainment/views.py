@@ -10,7 +10,6 @@ from rest_framework.response import Response
 from django.db import IntegrityError
 
 
-
 # Create your views here.
 @api_view(['POST'])
 def sign_up(request):
@@ -670,14 +669,14 @@ def comment(request):
     if request.method == 'GET':
         # with this method, we can get the required comment
         comment_id = request.GET.get('comment_id', None)
-        user_id = request.user.id
+
         if comment_id is None:
             content = {
                 'message': 'comment_id is missing'
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            comment_info = Comment.objects.get(id=comment_id, user_id=user_id)
+            comment_info = Comment.objects.get(id=comment_id)
 
             if comment_info.commenter_image:
                 image_url = comment_info.commenter_image.url
@@ -688,7 +687,7 @@ def comment(request):
             else:
                 profile_pic_url = None
             content = {
-                'user_id': user_id,
+                'user_id': comment_info.user.id,
                 'video_id': comment_info.video_id,
                 'video_name': comment_info.video.name,
                 'channel_id': comment_info.video.channel_id,
@@ -727,14 +726,14 @@ def comment(request):
             }
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
         try:
-            video_info = Video.objects.get(id=video_id, user_id=user_id)
+
             new_comment = Comment.objects.create(
                 video_id=video_id,
                 commenter_name=commenter_name,
                 commenter_image=commenter_image,
                 comment=comment,
                 likes=likes,
-                user_id=video_info.user_id
+                user_id=user_id
 
             )
             new_comment.save()
@@ -1164,7 +1163,7 @@ def user_subscriptions(request):
 def categories(request):
     all_categories = Category.objects.all()
     page = int(request.GET.get('page', 0))
-    limit = int(request.GET.get("limit", 2))
+    limit = int(request.GET.get("limit", 5))
     filtered_categories = all_categories[(page * limit):(page * limit) + limit]
     final_categories = []
     for temp_category in all_categories:
@@ -1241,80 +1240,119 @@ def category_channels(request):
     return Response(content, status=status.HTTP_200_OK)
 
 
+# @authentication_classes([JWTTokenUserAuthentication])
+# @permission_classes([IsAuthenticated])
+# @api_view(['GET'])
+# def newsfeed(request):
+#     category_id = request.GET.get('category_id', None)
+#     if category_id is None:
+#         all_categories = Category.objects.all()
+#     elif category_id is not None:
+#         all_categories = Category.objects.filter(id=category_id)
+#     content = []
+#     for data in all_categories:
+#         all_channels = Channel.objects.filter(category_id=category_id)
+#         category_channels = []
+#         for item_channel in all_channels:
+#             all_videos = Video.objects.filter(channel_id=category_id)
+#             channel_videos = []
+#             for item_video in all_videos:
+#                 all_comments = Comment.objects.filter(video_id=category_id)
+#                 video_comments = []
+#                 for item_comment in all_comments:
+#                     if item_comment.commenter_image:
+#                         image_url = item_comment.commenter_image.url
+#                     else:
+#                         image_url = None
+#                     comment_temp = {
+#                         'comment_id': item_comment.id,
+#                         'commenter_name': item_comment.commenter_name,
+#                         'commenter_image': image_url,
+#                         'comment': item_comment.comment,
+#                         'likes': item_comment.likes,
+#                         'created_at': item_comment.created_at,
+#                         'updated_at': item_comment.updated_at
+#                     }
+#                     video_comments.append(comment_temp)
+#                 if item_video.thumbnail:
+#                     image_url = item_video.thumbnail.url
+#                 else:
+#                     image_url = None
+#                 video_temp = {
+#                     'name': item_video.name,
+#                     'description': item_video.description,
+#                     'thumbnail': image_url,
+#                     'likes': item_video.likes,
+#                     'views': item_video.views,
+#                     'created_at': item_video.created_at,
+#                     'updated_at': item_video.updated_at,
+#                     'comments': video_comments
+#                 }
+#                 channel_videos.append(video_temp)
+#             if item_channel.banner:
+#                 banner_url = item_channel.banner.url
+#             else:
+#                 banner_url = None
+#             if item_channel.profile_pic:
+#                 image_url = item_channel.profile_pic.url
+#             else:
+#                 image_url = None
+#             channel_temp = {
+#                 'name': item_channel.name,
+#                 'banner': banner_url,
+#                 'profile_pic': image_url,
+#                 'description': item_channel.description,
+#                 'created_at': item_channel.created_at,
+#                 'updated_at': item_channel.updated_at,
+#                 'videos': channel_videos
+#             }
+#             category_channels.append(channel_temp)
+#
+#         temp = {
+#             'category_id': data.id,
+#             'category_name': data.name,
+#             'channels': category_channels,
+#         }
+#         content.append(temp)
+#     return Response(content, status=status.HTTP_200_OK)
+
+
 @authentication_classes([JWTTokenUserAuthentication])
 @permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def newsfeed(request):
-    category_id = request.GET.get('category_id', None)
-    if category_id is None:
-        all_categories = Category.objects.all()
-    elif category_id is not None:
-        all_categories = Category.objects.filter(id=category_id)
-    content = []
-    for data in all_categories:
-        all_channels = Channel.objects.filter(category_id=category_id)
-        category_channels = []
-        for item_channel in all_channels:
-            all_videos = Video.objects.filter(channel_id=category_id)
-            channel_videos = []
-            for item_video in all_videos:
-                all_comments = Comment.objects.filter(video_id=category_id)
-                video_comments = []
-                for item_comment in all_comments:
-                    if item_comment.commenter_image:
-                        image_url = item_comment.commenter_image.url
-                    else:
-                        image_url = None
-                    comment_temp = {
-                        'comment_id': item_comment.id,
-                        'commenter_name': item_comment.commenter_name,
-                        'commenter_image': image_url,
-                        'comment': item_comment.comment,
-                        'likes': item_comment.likes,
-                        'created_at': item_comment.created_at,
-                        'updated_at': item_comment.updated_at
-                    }
-                    video_comments.append(comment_temp)
-                if item_video.thumbnail:
-                    image_url = item_video.thumbnail.url
-                else:
-                    image_url = None
-                video_temp = {
-                    'name': item_video.name,
-                    'description': item_video.description,
-                    'thumbnail': image_url,
-                    'likes': item_video.likes,
-                    'views': item_video.views,
-                    'created_at': item_video.created_at,
-                    'updated_at': item_video.updated_at,
-                    'comments': video_comments
-                }
-                channel_videos.append(video_temp)
-            if item_channel.banner:
-                banner_url = item_channel.banner.url
-            else:
-                banner_url = None
-            if item_channel.profile_pic:
-                image_url = item_channel.profile_pic.url
+    user_id = request.user.id
+    page = int(request.GET.get('page', 0))
+    limit = int(request.GET.get("limit", 5))
+    subscriptions = Subscriber.objects.filter(user_id=user_id)
+    final_videos = []
+    # In this method,we can get subscribed videos
+    for subscription in subscriptions:
+        all_videos = Video.objects.filter(channel_id=subscription.channel_id)
+        filtered_videos = all_videos[(page * limit):(page * limit) + limit]
+        for item_video in all_videos:
+            if item_video.thumbnail:
+                image_url = item_video.thumbnail.url
             else:
                 image_url = None
-            channel_temp = {
-                'name': item_channel.name,
-                'banner': banner_url,
-                'profile_pic': image_url,
-                'description': item_channel.description,
-                'created_at': item_channel.created_at,
-                'updated_at': item_channel.updated_at,
-                'videos': channel_videos
-            }
-            category_channels.append(channel_temp)
+            video_temp = {
+                'name': item_video.name,
+                'description': item_video.description,
+                'thumbnail': image_url,
+                'likes': item_video.likes,
+                'views': item_video.views,
+                'created_at': item_video.created_at,
+                'updated_at': item_video.updated_at,
 
-        temp = {
-            'category_id': data.id,
-            'category_name': data.name,
-            'channels': category_channels,
-        }
-        content.append(temp)
+            }
+            final_videos.append(video_temp)
+    content = {
+        'videos': final_videos,
+        'page': page,
+        'limit': limit,
+        'count': len(final_videos),
+        'total_count': filtered_videos.count()
+    }
     return Response(content, status=status.HTTP_200_OK)
 
 
