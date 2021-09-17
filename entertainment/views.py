@@ -982,7 +982,7 @@ def videos(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_videos = []
     filtered_videos = all_videos[(page * limit):(page * limit) + limit]
-    for temp_video in all_videos:
+    for temp_video in filtered_videos:
         if temp_video.thumbnail:
             image_url = temp_video.thumbnail.url
         else:
@@ -1041,7 +1041,7 @@ def comments(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_comments = []
     filtered_comments = all_comments[(page * limit):(page * limit) + limit]
-    for temp_comment in all_comments:
+    for temp_comment in filtered_comments:
         if temp_comment.commenter_image:
             image_url = temp_comment.commenter_image.url
         else:
@@ -1093,7 +1093,7 @@ def channel_subscribers(request):
         all_subscribers = Subscriber.objects.filter(channel_id=channel_id)
         filtered_channel_subscribers = all_subscribers[(page * limit):(page * limit) + limit]
         subscriptions = []
-        for temp_subscriber in all_subscribers:
+        for temp_subscriber in filtered_channel_subscribers:
             content = {
 
                 'name': temp_subscriber.user.username,
@@ -1136,7 +1136,7 @@ def user_subscriptions(request):
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_subscribers = []
     filtered_channel_subscribers = all_subscribers[(page * limit):(page * limit) + limit]
-    for temp_subscribers in all_subscribers:
+    for temp_subscribers in filtered_channel_subscribers:
         if temp_subscribers.channel.profile_pic:
             profile_pic_url = temp_subscribers.channel.profile_pic.url
         else:
@@ -1166,7 +1166,7 @@ def categories(request):
     limit = int(request.GET.get("limit", 5))
     filtered_categories = all_categories[(page * limit):(page * limit) + limit]
     final_categories = []
-    for temp_category in all_categories:
+    for temp_category in filtered_categories:
         content = {
             'category_id': temp_category.id,
             'name': temp_category.name,
@@ -1209,7 +1209,7 @@ def category_channels(request):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
     final_channels = []
     filtered_category_channels = all_channels[(page * limit):(page * limit) + limit]
-    for temp_channel in all_channels:
+    for temp_channel in filtered_category_channels:
         if temp_channel.banner:
             banner_url = temp_channel.banner.url
         else:
@@ -1330,7 +1330,7 @@ def newsfeed(request):
     for subscription in subscriptions:
         all_videos = Video.objects.filter(channel_id=subscription.channel_id)
         filtered_videos = all_videos[(page * limit):(page * limit) + limit]
-        for item_video in all_videos:
+        for item_video in filtered_videos:
             if item_video.thumbnail:
                 image_url = item_video.thumbnail.url
             else:
@@ -1346,14 +1346,14 @@ def newsfeed(request):
 
             }
             final_videos.append(video_temp)
-    content = {
-        'videos': final_videos,
-        'page': page,
-        'limit': limit,
-        'count': len(final_videos),
-        'total_count': filtered_videos.count()
-    }
-    return Response(content, status=status.HTTP_200_OK)
+        content = {
+            'videos': final_videos,
+            'page': page,
+            'limit': limit,
+            'count': len(final_videos),
+            'total_count': filtered_videos.count()
+        }
+        return Response(content, status=status.HTTP_200_OK)
 
 
 @authentication_classes([JWTTokenUserAuthentication])
@@ -1369,7 +1369,7 @@ def videos_variations(request):
             all_videos = Video.objects.filter().order_by("-views")
             final_videos = []
             filtered_videos = all_videos[(page * limit):(page * limit) + limit]
-            for temp_video in all_videos:
+            for temp_video in filtered_videos:
                 if temp_video.thumbnail:
                     image_url = temp_video.thumbnail.url
                 else:
@@ -1411,7 +1411,7 @@ def videos_variations(request):
             all_videos = Video.objects.filter().order_by("-likes")
             final_videos = []
             filtered_videos = all_videos[(page * limit):(page * limit) + limit]
-            for temp_video in all_videos:
+            for temp_video in filtered_videos:
                 if temp_video.thumbnail:
                     image_url = temp_video.thumbnail.url
                 else:
@@ -1453,7 +1453,7 @@ def videos_variations(request):
             all_videos = Video.objects.filter().order_by('?')
             final_videos = []
             filtered_videos = all_videos[(page * limit):(page * limit) + limit]
-            for temp_video in all_videos:
+            for temp_video in filtered_videos:
                 if temp_video.thumbnail:
                     image_url = temp_video.thumbnail.url
                 else:
