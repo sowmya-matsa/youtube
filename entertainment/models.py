@@ -25,7 +25,7 @@ class Channel(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     name = models.CharField(max_length=255)
-    banner = models.ImageField(max_length=255)
+    banner = models.ImageField(blank=True, null=True, default=None)
     profile_pic = models.ImageField(blank=True, null=True, default=None)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
